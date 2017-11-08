@@ -1,0 +1,26 @@
+dependencies:
+  pre:
+    - go get -u github.com/golang/dep
+  override:
+    - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
+    # This is a hack so that govendor doesn't break when the workspace dir is missing
+    - sudo mkdir -p /usr/local/go_workspace/src
+    - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+    - cd ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && env GOPATH=$GOPATH:$HOME/.go_project/ dep ensure
+
+test:
+  override:
+    - cd ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && env GOPATH=$GOPATH:$HOME/.go_project go build -v
+    - cp txtplate ${CIRCLE_ARTIFACTS}/
+
+deployment:
+  release:
+    tag: /v[0-9]+(\.[0-9]+){2}/
+    owner: aarondl
+    commands:
+      - go get github.com/tcnksm/ghr
+      - mkdir dist
+      - cd ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && env GOPATH=$GOPATH:$HOME/.go_project GOARCH=amd64 GOOS=linux go build -o dist/txtplate-linux-amd64
+      - cd ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && env GOPATH=$GOPATH:$HOME/.go_project GOARCH=amd64 GOOS=darwin go build -o dist/txtplate-darwin-amd64
+      - for i in linux darwin; do cp dist/txtplate-${i}-amd64 ${CIRCLE_ARTIFACTS}/; done
+      - ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -replace ${CIRCLE_TAG} dist/
