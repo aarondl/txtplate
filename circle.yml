@@ -1,6 +1,6 @@
 dependencies:
   pre:
-    - go get -u github.com/golang/dep
+    - go get -u github.com/golang/dep/...
   override:
     - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
     # This is a hack so that govendor doesn't break when the workspace dir is missing
