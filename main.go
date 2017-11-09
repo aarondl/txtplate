@@ -7,7 +7,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"text/template"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
@@ -21,10 +24,11 @@ var (
 
 var rootCmd = cobra.Command{
 	Use:   "txtplate [flags] <valuesfile>",
-	Short: "Apply values in a json file to go text/templated templates",
+	Short: "Apply values in a json or yaml file to go text/templated templates",
 	Long: `By default run stdin (or --input) through the go templating engine
 and output the result to stdout (or --output). Template functions available
-are from the sprig (https://github.com/Masterminds/sprig) package.
+are from the sprig (https://github.com/Masterminds/sprig) package. Detects
+the file type of valuesfile based on extension, defaults to json if omitted.
 
 Example:
 	cat mytemplate.tpl | txtplate values.json > output.txt
@@ -54,8 +58,16 @@ func doTemplating(cmd *cobra.Command, args []string) error {
 	}
 
 	var data interface{}
-	if err = json.Unmarshal(byt, &data); err != nil {
-		return errors.Wrap(err, "failed to parse values file as json")
+
+	switch filepath.Ext(args[0]) {
+	case ".yaml", ".yml":
+		if err = yaml.Unmarshal(byt, &data); err != nil {
+			return errors.Wrap(err, "failed to parse values file as json")
+		}
+	default:
+		if err = json.Unmarshal(byt, &data); err != nil {
+			return errors.Wrap(err, "failed to parse values file as json")
+		}
 	}
 
 	if len(flagInput) != 0 {
