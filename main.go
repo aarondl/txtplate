@@ -62,7 +62,7 @@ func doTemplating(cmd *cobra.Command, args []string) error {
 	switch filepath.Ext(args[0]) {
 	case ".yaml", ".yml":
 		if err = yaml.Unmarshal(byt, &data); err != nil {
-			return errors.Wrap(err, "failed to parse values file as json")
+			return errors.Wrap(err, "failed to parse values file as yaml")
 		}
 	default:
 		if err = json.Unmarshal(byt, &data); err != nil {
